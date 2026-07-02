@@ -1,0 +1,20 @@
+{
+  "name": "makefile-convention-guard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "test": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/allef-oliveira/makefile-convention-guard.git"
+  },
+  "keywords": [],
+  "author": "allef-ramos",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/allef-oliveira/makefile-convention-guard/issues"
+  },
+  "homepage": "https://github.com/allef-oliveira/makefile-convention-guard#readme",
+}
