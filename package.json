@@ -1,7 +1,17 @@
 {
   "name": "makefile-convention-guard",
+  "displayName": "Makefile Convention Guard",
+  "description": "Format, validate and run Makefile target from VS Code",
   "version": "1.0.0",
-  "description": "",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "categories": [
+    "Linters",
+    "Formatters",
+    "Other"
+  ],
   "main": "./dist/extension.js",
   "scripts": {
     "compile": "tsc -p ./",
