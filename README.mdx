@@ -16,6 +16,7 @@
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/>
   <img alt="Node.js" src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white"/>
   <img alt="Makefile" src="https://img.shields.io/badge/Makefile-064F8C?style=for-the-badge&logo=gnu&logoColor=white"/>
+  <img alt="Mocha" src="https://img.shields.io/badge/Mocha-8D6748?style=for-the-badge&logo=mocha&logoColor=white"/>
   <img alt="Git" src="https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white"/>
 </p>
 
@@ -34,21 +35,24 @@ The extension aims to provide a consistent development experience by combining:
 * Makefile diagnostics;
 * whitespace lint rules;
 * configurable validation settings;
+* unit-tested diagnostic rules;
 * formatter support;
 * future quick fixes;
 * future Make target execution from a VS Code interface.
 
-The project was created to enforce simple and practical Makefile conventions while keeping the rules configurable and easy to evolve.
+The project was created to enforce simple and practical Makefile conventions while keeping the rules configurable, testable and easy to evolve.
 
 ## ✨ Features
 
-Current features planned for the initial version:
+Current features for the initial version:
 
 * Validate trailing whitespace in Makefiles.
 * Detect multiple consecutive blank lines.
 * Detect missing final newline at the end of the file.
+* Detect blank lines between a Makefile target and its first recipe command.
 * Register diagnostics in the VS Code **Problems** panel.
 * Use TypeScript for safer extension development.
+* Use pure analyzer functions for fast unit testing.
 * Provide a modular structure for future rules, formatters and commands.
 
 Future features planned for upcoming versions:
@@ -65,6 +69,8 @@ Future features planned for upcoming versions:
 
 ```text
 makefile-convention-guard/
+├── assets/
+│   └── thumb.png
 ├── src/
 │   ├── config/
 │   │   └── getDiagnosticSettings.ts
@@ -74,13 +80,22 @@ makefile-convention-guard/
 │   │   ├── registerDiagnostics.ts
 │   │   ├── validateMakefileStyle.ts
 │   │   └── rules/
+│   │       ├── whitespaceAnalyzer.ts
 │   │       └── whitespaceRules.ts
+│   ├── makefile/
+│   │   └── parser.ts
+│   ├── tests/
+│   │   └── unit/
+│   │       └── whitespaceAnalyzer.test.ts
 │   ├── types/
 │   │   └── diagnostics.ts
+│   ├── utils/
+│   │   └── lineUtils.ts
 │   ├── constants.ts
 │   └── extension.ts
 ├── dist/
 ├── package.json
+├── package-lock.json
 ├── tsconfig.json
 ├── README.md
 └── .gitignore
@@ -91,6 +106,7 @@ makefile-convention-guard/
 * Visual Studio Code Extension API
 * TypeScript
 * Node.js
+* Mocha
 * Makefile
 * Git
 * GitHub
@@ -100,9 +116,10 @@ makefile-convention-guard/
 * Create a VS Code extension for Makefile convention enforcement.
 * Provide simple and configurable lint rules for Makefiles.
 * Improve consistency across Makefile-based project workflows.
-* Keep the extension modular and easy to extend.
+* Keep the extension modular, testable and easy to extend.
 * Use TypeScript to improve type safety and maintainability.
 * Prepare the project for future formatter, quick fix and Make command execution features.
+* Prepare the project for CI using fast unit tests.
 
 ## ⚙️ Development Setup
 
@@ -129,6 +146,41 @@ Watch TypeScript files during development:
 ```bash
 npm run watch
 ```
+
+## 🧪 Running Tests
+
+The project currently uses **Mocha** for fast unit tests.
+
+The whitespace validation logic is split into a pure analyzer module so it can be tested without starting the VS Code Extension Host.
+
+Run unit tests:
+
+```bash
+npm run test:unit
+```
+
+Run the default test command:
+
+```bash
+npm test
+```
+
+Recommended validation before committing:
+
+```bash
+npm run check
+npm run compile
+npm run test:unit
+```
+
+Current unit test coverage includes:
+
+* trailing whitespace;
+* multiple consecutive blank lines;
+* missing final newline;
+* blank line before recipe command;
+* disabled diagnostics;
+* disabled individual whitespace rules.
 
 ## 🧪 Running the Extension Locally
 
@@ -181,6 +233,25 @@ DOCS_DIR := docs
 
 Warns when the file does not end with a final newline.
 
+### Blank line before recipe command
+
+Warns when there is a blank line between a Makefile target and its first recipe command.
+
+Invalid format:
+
+```makefile
+test:
+
+	nvm install
+```
+
+Expected format:
+
+```makefile
+test:
+	nvm install
+```
+
 ## 🛠️ Available Scripts
 
 ```json
@@ -188,6 +259,8 @@ Warns when the file does not end with a final newline.
   "compile": "tsc -p ./",
   "watch": "tsc -watch -p ./",
   "check": "tsc --noEmit -p ./",
+  "test:unit": "npm run compile && mocha \"dist/tests/unit/**/*.test.js\"",
+  "test": "npm run test:unit",
   "vscode:prepublish": "npm run compile"
 }
 ```
@@ -201,7 +274,9 @@ Initial version focused on:
 * project structure;
 * TypeScript build configuration;
 * Makefile diagnostics registration;
-* simplified whitespace lint rules.
+* simplified whitespace lint rules;
+* pure whitespace analyzer;
+* unit tests for whitespace diagnostics.
 
 ### Future versions
 
@@ -212,7 +287,9 @@ Planned improvements:
 * section validation;
 * quick fixes;
 * Make command tree view;
-* interface-based command execution.
+* interface-based command execution;
+* VS Code integration tests;
+* CI pipeline.
 
 ## 👨‍💻 Author
 
