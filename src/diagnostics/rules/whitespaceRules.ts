@@ -1,168 +1,69 @@
 import * as vscode from "vscode";
 
 import { DIAGNOSTIC_CODES } from "../../constants";
-import { isMakeTargetLine, isRecipeCommandLine } from "../../makefile/parser";
-import type { WhitespaceDiagnosticSettings } from "../../types/diagnostics";
-import {
-  findTrailingWhitespaceStart,
-  hasFinalNewline,
-  splitLines,
-} from "../../utils/lineUtils";
+import type {
+  DiagnosticCode,
+  WhitespaceDiagnosticSettings,
+} from "../../types/diagnostics";
 import { createDiagnostic } from "../createDiagnostic";
 import { DIAGNOSTIC_MESSAGES } from "../message";
+import {
+  analyzeWhitespaceRules,
+  type WhitespaceDiagnosticFinding,
+} from "./whitespaceAnalyzer";
 
-
+/**
+ * Whitespace diagnostic rules for Makefile documents.
+ *
+ * This module adapts pure whitespace rule findings into VS Code diagnostics.
+ * The actual rule analysis is implemented in whitespaceAnalyzer.ts so it can
+ * be tested without loading the VS Code Extension Host.
+ */
 export function validateWhitespaceRules(
   document: vscode.TextDocument,
   settings: WhitespaceDiagnosticSettings,
 ): vscode.Diagnostic[] {
-  const diagnostics: vscode.Diagnostic[] = [];
-
-  if (!settings.enabled) {
-    return diagnostics;
-  }
-
   const text = document.getText();
-  const lines = splitLines(text);
+  const findings = analyzeWhitespaceRules(text, settings);
 
-  if (settings.warnTrailingWhitespace) {
-    diagnostics.push(...validateTrailingWhitespace(document, lines));
-  }
-
-  if (settings.warnMultipleBlankLines) {
-    diagnostics.push(...validateMultipleBlankLines(document, lines));
-  }
-
-  if (settings.requireFinalNewline) {
-    diagnostics.push(...validateFinalNewline(document, text, lines));
-  }
-
-  if (settings.warnBlankLineBeforeRecipeCommand) {
-    diagnostics.push(...validateBlankLineBeforeRecipeCommand(document, lines));
-  }
-
-  return diagnostics;
+  return findings.map((finding) => createWhitespaceDiagnostic(document, finding));
 }
 
-function validateTrailingWhitespace(
+/**
+ * Converts a pure whitespace finding into a VS Code diagnostic.
+ */
+function createWhitespaceDiagnostic(
   document: vscode.TextDocument,
-  lines: string[],
-): vscode.Diagnostic[] {
-  const diagnostics: vscode.Diagnostic[] = [];
-
-  lines.forEach((line, lineIndex) => {
-    const startColumn = findTrailingWhitespaceStart(line);
-
-    if (startColumn === null) {
-      return;
-    }
-
-    diagnostics.push(
-      createDiagnostic({
-        document,
-        lineIndex,
-        startColumn,
-        endColumn: line.length,
-        message: DIAGNOSTIC_MESSAGES.TRAILING_WHITESPACE,
-        code: DIAGNOSTIC_CODES.TRAILING_WHITESPACE,
-      }),
-    );
+  finding: WhitespaceDiagnosticFinding,
+): vscode.Diagnostic {
+  return createDiagnostic({
+    document,
+    lineIndex: finding.lineIndex,
+    startColumn: finding.startColumn,
+    endColumn: finding.endColumn,
+    message: getDiagnosticMessage(finding.code),
+    code: finding.code,
   });
-
-  return diagnostics;
 }
 
-function validateMultipleBlankLines(
-  document: vscode.TextDocument,
-  lines: string[],
-): vscode.Diagnostic[] {
-  const diagnostics: vscode.Diagnostic[] = [];
-  let consecutiveBlankLines = 0;
+/**
+ * Resolves the user-facing diagnostic message for each whitespace rule code.
+ */
+function getDiagnosticMessage(code: DiagnosticCode): string {
+  switch (code) {
+    case DIAGNOSTIC_CODES.TRAILING_WHITESPACE:
+      return DIAGNOSTIC_MESSAGES.TRAILING_WHITESPACE;
 
-  lines.forEach((line, lineIndex) => {
-    if (line.trim() === "") {
-      consecutiveBlankLines += 1;
+    case DIAGNOSTIC_CODES.MULTIPLE_BLANK_LINES:
+      return DIAGNOSTIC_MESSAGES.MULTIPLE_BLANK_LINES;
 
-      if (consecutiveBlankLines >= 2) {
-        diagnostics.push(
-          createDiagnostic({
-            document,
-            lineIndex,
-            startColumn: 0,
-            endColumn: line.length,
-            message: DIAGNOSTIC_MESSAGES.MULTIPLE_BLANK_LINES,
-            code: DIAGNOSTIC_CODES.MULTIPLE_BLANK_LINES,
-          }),
-        );
-      }
+    case DIAGNOSTIC_CODES.MISSING_FINAL_NEWLINE:
+      return DIAGNOSTIC_MESSAGES.MISSING_FINAL_NEWLINE;
 
-      return;
-    }
+    case DIAGNOSTIC_CODES.BLANK_LINE_BEFORE_RECIPE_COMMAND:
+      return DIAGNOSTIC_MESSAGES.BLANK_LINE_BEFORE_RECIPE_COMMAND;
 
-    consecutiveBlankLines = 0;
-  });
-
-  return diagnostics;
-}
-
-function validateFinalNewline(
-  document: vscode.TextDocument,
-  text: string,
-  lines: string[],
-): vscode.Diagnostic[] {
-  if (hasFinalNewline(text)) {
-    return [];
+    default:
+      return "Makefile whitespace convention warning.";
   }
-
-  const lastLineIndex = Math.max(0, lines.length - 1);
-  const lastLine = lines[lastLineIndex] ?? "";
-
-  return [
-    createDiagnostic({
-      document,
-      lineIndex: lastLineIndex,
-      startColumn: lastLine.length,
-      endColumn: lastLine.length,
-      message: DIAGNOSTIC_MESSAGES.MISSING_FINAL_NEWLINE,
-      code: DIAGNOSTIC_CODES.MISSING_FINAL_NEWLINE,
-    }),
-  ];
-}
-
-function validateBlankLineBeforeRecipeCommand(
-  document: vscode.TextDocument,
-  lines: string[],
-): vscode.Diagnostic[] {
-  const diagnostics: vscode.Diagnostic[] = [];
-
-  for (let lineIndex = 0; lineIndex + 2 < lines.length; lineIndex += 1) {
-    const currentLine = lines[lineIndex] ?? "";
-    const nextLine = lines[lineIndex + 1] ?? "";
-    const followingLine = lines[lineIndex + 2] ?? "";
-
-    if (!isMakeTargetLine(currentLine)) {
-      continue;
-    }
-
-    if (nextLine.trim() !== "") {
-      continue;
-    }
-
-    if (!isRecipeCommandLine(followingLine)) {
-      continue;
-    }
-
-    diagnostics.push(
-      createDiagnostic({
-        document,
-        lineIndex: lineIndex + 1,
-        startColumn: 0,
-        endColumn: nextLine.length,
-        message: DIAGNOSTIC_MESSAGES.BLANK_LINE_BEFORE_RECIPE_COMMAND,
-        code: DIAGNOSTIC_CODES.BLANK_LINE_BEFORE_RECIPE_COMMAND,
-      }),
-    );
-  }
-
-  return diagnostics;
 }

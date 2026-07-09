@@ -17,6 +17,8 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "check": "tsc --noEmit -p ./",
+    "test:unit": "mocha dist/tests/unit/**/*.test.js",
+    "test": "npm run test:unit",
     "vscode:prepublish": "npm run compile"
   },
   "repository": {
@@ -31,8 +33,11 @@
   },
   "homepage": "https://github.com/allef-oliveira/makefile-convention-guard#readme",
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "^26.1.0",
     "@types/vscode": "^1.125.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.0.0",
     "typescript": "^6.0.3"
   }
 }
