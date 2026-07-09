@@ -25,5 +25,9 @@ export function getDiagnosticSettings(
       "diagnostics.requireFinalNewline",
       true,
     ),
+    warnBlankLineBeforeRecipeCommand: config.get<boolean>(
+      "diagnostics.warnBlankLineBeforeRecipeCommand",
+      true,
+    ),
   };
 }

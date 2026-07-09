@@ -1,9 +1,16 @@
 import * as vscode from "vscode";
 
 import { DIAGNOSTIC_CODES } from "../../constants";
-import { DIAGNOSTIC_MESSAGES } from "../message";
-import { createDiagnostic } from "../createDiagnostic";
+import { isMakeTargetLine, isRecipeCommandLine } from "../../makefile/parser";
 import type { WhitespaceDiagnosticSettings } from "../../types/diagnostics";
+import {
+  findTrailingWhitespaceStart,
+  hasFinalNewline,
+  splitLines,
+} from "../../utils/lineUtils";
+import { createDiagnostic } from "../createDiagnostic";
+import { DIAGNOSTIC_MESSAGES } from "../message";
+
 
 export function validateWhitespaceRules(
   document: vscode.TextDocument,
@@ -16,7 +23,7 @@ export function validateWhitespaceRules(
   }
 
   const text = document.getText();
-  const lines = text.split(/\r?\n/);
+  const lines = splitLines(text);
 
   if (settings.warnTrailingWhitespace) {
     diagnostics.push(...validateTrailingWhitespace(document, lines));
@@ -30,6 +37,10 @@ export function validateWhitespaceRules(
     diagnostics.push(...validateFinalNewline(document, text, lines));
   }
 
+  if (settings.warnBlankLineBeforeRecipeCommand) {
+    diagnostics.push(...validateBlankLineBeforeRecipeCommand(document, lines));
+  }
+
   return diagnostics;
 }
 
@@ -40,15 +51,11 @@ function validateTrailingWhitespace(
   const diagnostics: vscode.Diagnostic[] = [];
 
   lines.forEach((line, lineIndex) => {
-    const trailingWhitespaceMatch = line.match(/[ \t]+$/);
+    const startColumn = findTrailingWhitespaceStart(line);
 
-    if (
-      !trailingWhitespaceMatch ||
-      trailingWhitespaceMatch.index === undefined
-    ) {
+    if (startColumn === null) {
       return;
     }
-    const startColumn = trailingWhitespaceMatch.index;
 
     diagnostics.push(
       createDiagnostic({
@@ -103,7 +110,7 @@ function validateFinalNewline(
   text: string,
   lines: string[],
 ): vscode.Diagnostic[] {
-  if (text.length === 0 || text.endsWith("\n")) {
+  if (hasFinalNewline(text)) {
     return [];
   }
 
@@ -120,4 +127,42 @@ function validateFinalNewline(
       code: DIAGNOSTIC_CODES.MISSING_FINAL_NEWLINE,
     }),
   ];
+}
+
+function validateBlankLineBeforeRecipeCommand(
+  document: vscode.TextDocument,
+  lines: string[],
+): vscode.Diagnostic[] {
+  const diagnostics: vscode.Diagnostic[] = [];
+
+  for (let lineIndex = 0; lineIndex + 2 < lines.length; lineIndex += 1) {
+    const currentLine = lines[lineIndex] ?? "";
+    const nextLine = lines[lineIndex + 1] ?? "";
+    const followingLine = lines[lineIndex + 2] ?? "";
+
+    if (!isMakeTargetLine(currentLine)) {
+      continue;
+    }
+
+    if (nextLine.trim() !== "") {
+      continue;
+    }
+
+    if (!isRecipeCommandLine(followingLine)) {
+      continue;
+    }
+
+    diagnostics.push(
+      createDiagnostic({
+        document,
+        lineIndex: lineIndex + 1,
+        startColumn: 0,
+        endColumn: nextLine.length,
+        message: DIAGNOSTIC_MESSAGES.BLANK_LINE_BEFORE_RECIPE_COMMAND,
+        code: DIAGNOSTIC_CODES.BLANK_LINE_BEFORE_RECIPE_COMMAND,
+      }),
+    );
+  }
+
+  return diagnostics;
 }

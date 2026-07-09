@@ -3,7 +3,8 @@ import * as vscode from "vscode";
 export type DiagnosticCode =
   | "trailing-whitespace"
   | "multiple-blank-lines"
-  | "missing-final-newline";
+  | "missing-final-newline"
+  | "blank-line-before-recipe-command";
 
 export interface MakefileDiagnosticRule {
   code: DiagnosticCode;
@@ -15,4 +16,5 @@ export interface WhitespaceDiagnosticSettings {
   warnTrailingWhitespace: boolean;
   warnMultipleBlankLines: boolean;
   requireFinalNewline: boolean;
+  warnBlankLineBeforeRecipeCommand: boolean;
 }
