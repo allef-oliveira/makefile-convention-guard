@@ -18,8 +18,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: TypeScript checks and tests
+  unit:
+    name: TypeScript checks and unit tests
     runs-on:
       - self-hosted
       - linux
@@ -48,13 +48,84 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
-      - name: Cache VS Code test binary
-        uses: actions/cache@v4
+  vscode-test-environment:
+    name: Prepare VS Code test environment
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - makefile-convention-guard
+
+    steps:
+      - name: Check and install VS Code test dependencies
+        run: |
+          set -e
+
+          REQUIRED_PACKAGES=(
+            xvfb
+            libgtk-3-0
+            libnss3
+            libgbm1
+            libxss1
+          )
+
+          MISSING_PACKAGES=()
+
+          for package in "${REQUIRED_PACKAGES[@]}"; do
+            if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q "install ok installed"; then
+              MISSING_PACKAGES+=("$package")
+            fi
+          done
+
+          if ! dpkg-query -W -f='${Status}' libasound2 2>/dev/null | grep -q "install ok installed" &&
+             ! dpkg-query -W -f='${Status}' libasound2t64 2>/dev/null | grep -q "install ok installed"; then
+            MISSING_ASOUND=true
+          else
+            MISSING_ASOUND=false
+          fi
+
+          if [ ${#MISSING_PACKAGES[@]} -eq 0 ] && [ "$MISSING_ASOUND" = false ]; then
+            echo "All VS Code test dependencies are already installed."
+            exit 0
+          fi
+
+          sudo apt-get update
+
+          if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
+            sudo apt-get install -y "${MISSING_PACKAGES[@]}"
+          fi
+
+          if [ "$MISSING_ASOUND" = true ]; then
+            sudo apt-get install -y libasound2 || sudo apt-get install -y libasound2t64
+          fi
+
+  extension:
+    name: VS Code extension tests
+    needs:
+      - unit
+      - vscode-test-environment
+
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - makefile-convention-guard
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
         with:
-          path: .vscode-test
-          key: vscode-test-${{ runner.os }}-1.128.0
-          restore-keys: |
-            vscode-test-${{ runner.os }}-
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile extension
+        run: npm run compile
 
       - name: Run extension tests
-        run: npm run test:extension:ci
+        run: xvfb-run -a npm run test:extension:ci
