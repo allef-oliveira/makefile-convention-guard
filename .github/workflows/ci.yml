@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   test:
-    name: TypeScript checks and unit tests
+    name: TypeScript checks and tests
     runs-on:
       - self-hosted
       - linux
@@ -48,5 +48,13 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
+      - name: Cache VS Code test binary
+        uses: actions/cache@v4
+        with:
+          path: .vscode-test
+          key: vscode-test-${{ runner.os }}-1.128.0
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+
       - name: Run extension tests
-        run: npm run test:extension
+        run: npm run test:extension:ci

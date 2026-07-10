@@ -23,7 +23,8 @@
     "test": "npm run compile && npm run test:unit",
     "test:unit": "mocha dist/tests/unit/**/*.test.js",
     "test:extension": "npm run compile && vscode-test",
-    "test:all": "npm run compile && npm run test:unit && vscode-test",
+    "test:extension:ci": "vscode-test",
+    "test:all": "npm run compile && npm run test:unit && npm run test:extension:ci",
     "vscode:prepublish": "npm run compile"
   },
   "repository": {
