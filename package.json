@@ -12,6 +12,9 @@
     "Formatters",
     "Other"
   ],
+  "activationEvents": [
+    "onLanguage:makefile"
+  ],
   "main": "./dist/extension.js",
   "scripts": {
     "compile": "tsc -p ./",
