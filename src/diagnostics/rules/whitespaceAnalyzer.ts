@@ -137,35 +137,46 @@ function findMissingFinalNewline(
 }
 
 /**
- * Finds a blank line between a Makefile target and its first recipe command.
+ * Finds one or more blank lines between a Makefile target and its first recipe command.
  */
 function findBlankLineBeforeRecipeCommand(
   lines: string[],
 ): WhitespaceDiagnosticFinding[] {
   const findings: WhitespaceDiagnosticFinding[] = [];
 
-  for (let lineIndex = 0; lineIndex + 2 < lines.length; lineIndex += 1) {
+  for (let lineIndex = 0; lineIndex + 1 < lines.length; lineIndex += 1) {
     const currentLine = getLine(lines, lineIndex);
-    const nextLine = getLine(lines, lineIndex + 1);
-    const followingLine = getLine(lines, lineIndex + 2);
 
     if (!isMakeTargetLine(currentLine)) {
       continue;
     }
 
-    if (!isBlankLine(nextLine)) {
+    const firstBlankLineIndex = lineIndex + 1;
+
+    if (!isBlankLine(getLine(lines, firstBlankLineIndex))) {
       continue;
     }
 
-    if (!isRecipeCommandLine(followingLine)) {
+    let nextNonBlankLineIndex = firstBlankLineIndex;
+
+    while (
+      nextNonBlankLineIndex < lines.length &&
+      isBlankLine(getLine(lines, nextNonBlankLineIndex))
+    ) {
+      nextNonBlankLineIndex += 1;
+    }
+
+    const nextNonBlankLine = getLine(lines, nextNonBlankLineIndex);
+
+    if (!isRecipeCommandLine(nextNonBlankLine)) {
       continue;
     }
 
     findings.push({
       code: DIAGNOSTIC_CODES.BLANK_LINE_BEFORE_RECIPE_COMMAND,
-      lineIndex: lineIndex + 1,
+      lineIndex: firstBlankLineIndex,
       startColumn: 0,
-      endColumn: nextLine.length,
+      endColumn: getLine(lines, firstBlankLineIndex).length,
     });
   }
 

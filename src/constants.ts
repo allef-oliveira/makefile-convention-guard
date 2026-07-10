@@ -10,3 +10,9 @@ export const DIAGNOSTIC_CODES = {
   MISSING_FINAL_NEWLINE: "missing-final-newline",
   BLANK_LINE_BEFORE_RECIPE_COMMAND: "blank-line-before-recipe-command",
 } as const;
+
+export const FALLBACK_MESSAGES = {
+  UNKNOWN_WHITESPACE_DIAGNOSTIC:
+    "Makefile whitespace convention warning.",
+} as const;
+
