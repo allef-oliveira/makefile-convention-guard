@@ -20,8 +20,10 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "check": "tsc --noEmit -p ./",
+    "test": "npm run compile && npm run test:unit",
     "test:unit": "mocha dist/tests/unit/**/*.test.js",
-    "test": "npm run test:unit",
+    "test:extension": "npm run compile && vscode-test",
+    "test:all": "npm run compile && npm run test:unit && vscode-test",
     "vscode:prepublish": "npm run compile"
   },
   "repository": {
