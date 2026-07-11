@@ -59,7 +59,10 @@ jobs:
     steps:
       - name: Check VS Code test dependencies
         run: |
-          set -e
+          set -euo pipefail
+
+          VSCODE_TEST_DIR="/opt/vscode-test/vscode-linux-x64-1.128.0"
+          VSCODE_BIN="${VSCODE_TEST_DIR}/code"
 
           is_installed() {
             dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "install ok installed"
@@ -92,6 +95,17 @@ jobs:
             exit 1
           }
 
+          require_executable() {
+            local file_path="$1"
+
+            if [ ! -x "$file_path" ]; then
+              echo "Missing executable file: $file_path"
+              exit 1
+            fi
+
+            echo "Executable found: $file_path"
+          }
+
           require_command xvfb-run
 
           require_any_package "GTK 3 runtime" libgtk-3-0 libgtk-3-0t64
@@ -100,7 +114,11 @@ jobs:
           require_any_package "XSS runtime" libxss1
           require_any_package "ALSA runtime" libasound2 libasound2t64
 
-          echo "VS Code test dependencies are installed."
+          require_executable "$VSCODE_BIN"
+
+          xvfb-run -a "$VSCODE_BIN" --ozone-platform=x11 --version
+
+          echo "VS Code test environment is ready."
 
   extension:
     name: VS Code extension tests
@@ -131,4 +149,7 @@ jobs:
         run: npm run compile
 
       - name: Run extension tests
+        timeout-minutes: 10
+        env:
+          VSCODE_EXECUTABLE_PATH: /opt/vscode-test/vscode-linux-x64-1.128.0/code
         run: xvfb-run -a npm run test:extension:ci
