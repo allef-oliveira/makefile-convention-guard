@@ -179,15 +179,9 @@ jobs:
 
       - name: Compile extension
         run: npm run compile
-      
-      - name: List compiled extension tests
-        run: |
-          echo "Compiled extension tests:"
-          find dist/tests/suite -name "*.test.js" -type f -print
 
-          echo ""
-          echo ".vscode-test.js:"
-          cat .vscode-test.js
+      - name: List compiled extension tests
+        run: find dist/tests/suite -name "*.test.js" -type f -print
 
       - name: Run extension tests
         timeout-minutes: 10
