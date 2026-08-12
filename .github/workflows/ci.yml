@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  unit:
     name: TypeScript checks and unit tests
     runs-on:
       - self-hosted
@@ -47,3 +47,144 @@ jobs:
 
       - name: Run unit tests
         run: npm run test:unit
+
+  vscode-test-environment:
+    name: Check VS Code test environment
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - makefile-convention-guard
+
+    steps:
+      - name: Check VS Code test dependencies
+        run: |
+          set -euo pipefail
+
+          VSCODE_TEST_DIR="/opt/vscode-test/vscode-linux-x64-1.128.0"
+          VSCODE_BIN="${VSCODE_TEST_DIR}/code"
+          VSCODE_CLI="${VSCODE_TEST_DIR}/bin/code"
+          VSCODE_SANDBOX="${VSCODE_TEST_DIR}/chrome-sandbox"
+
+          is_installed() {
+            dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "install ok installed"
+          }
+
+          require_command() {
+            local command_name="$1"
+
+            if ! command -v "$command_name" >/dev/null 2>&1; then
+              echo "Missing required command: $command_name"
+              exit 1
+            fi
+
+            echo "Command found: $command_name"
+          }
+
+          require_any_package() {
+            local label="$1"
+            shift
+
+            for package in "$@"; do
+              if is_installed "$package"; then
+                echo "$label found through package: $package"
+                return 0
+              fi
+            done
+
+            echo "Missing required dependency: $label"
+            echo "Expected one of: $*"
+            exit 1
+          }
+
+          require_executable() {
+            local file_path="$1"
+
+            if [ ! -x "$file_path" ]; then
+              echo "Missing executable file: $file_path"
+              exit 1
+            fi
+
+            echo "Executable found: $file_path"
+          }
+
+          require_suid_sandbox() {
+            local file_path="$1"
+
+            if [ ! -f "$file_path" ]; then
+              echo "Missing sandbox helper: $file_path"
+              exit 1
+            fi
+
+            local owner
+            owner="$(stat -c '%U' "$file_path")"
+
+            local mode
+            mode="$(stat -c '%a' "$file_path")"
+
+            if [ "$owner" != "root" ] || [ "$mode" != "4755" ]; then
+              echo "Invalid chrome-sandbox configuration: $file_path"
+              echo "Expected owner=root and mode=4755"
+              echo "Current owner=$owner mode=$mode"
+              echo ""
+              echo "Fix manually on the self-hosted runner with:"
+              echo "sudo chown root:root $file_path"
+              echo "sudo chmod 4755 $file_path"
+              exit 1
+            fi
+
+            echo "Sandbox helper is correctly configured: $file_path"
+          }
+
+          require_command xvfb-run
+
+          require_any_package "GTK 3 runtime" libgtk-3-0 libgtk-3-0t64
+          require_any_package "NSS runtime" libnss3
+          require_any_package "GBM runtime" libgbm1
+          require_any_package "XSS runtime" libxss1
+          require_any_package "ALSA runtime" libasound2 libasound2t64
+
+          require_executable "$VSCODE_BIN"
+          require_executable "$VSCODE_CLI"
+          require_suid_sandbox "$VSCODE_SANDBOX"
+
+          timeout 15s "$VSCODE_CLI" --version
+
+          echo "VS Code test environment is ready."
+
+  extension:
+    name: VS Code extension tests
+    needs:
+      - unit
+      - vscode-test-environment
+
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - makefile-convention-guard
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile extension
+        run: npm run compile
+
+      - name: List compiled extension tests
+        run: find dist/tests/suite -name "*.test.js" -type f -print
+
+      - name: Run extension tests
+        timeout-minutes: 10
+        env:
+          VSCODE_EXECUTABLE_PATH: /opt/vscode-test/vscode-linux-x64-1.128.0/code
+        run: xvfb-run -a npm run test:extension:ci
