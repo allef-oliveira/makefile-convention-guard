@@ -1,7 +1,7 @@
 {
   "name": "makefile-convention-guard",
   "displayName": "Makefile Convention Guard",
-  "description": "Format, validate and run Makefile target from VS Code",
+  "description": "Lint and fix Makefile whitespace conventions in VS Code",
   "version": "1.0.0",
   "publisher": "local",
   "engines": {
@@ -9,7 +9,6 @@
   },
   "categories": [
     "Linters",
-    "Formatters",
     "Other"
   ],
   "contributes": {

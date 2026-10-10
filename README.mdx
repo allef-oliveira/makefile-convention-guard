@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  VS Code extension for formatting, validating and running <strong>Makefile</strong> targets using configurable project conventions.<br/>
-  Built with TypeScript and focused on Makefile diagnostics, formatting rules and developer workflow automation.
+  VS Code extension for validating and fixing <strong>Makefile</strong> whitespace conventions.<br/>
+  Built with TypeScript and focused on Makefile diagnostics and quick fixes.
 </p>
 
 ---
@@ -24,7 +24,7 @@
 
 # Makefile Convention Guard
 
-VS Code extension created to help standardize Makefile files through diagnostics, formatting conventions and command execution directly from the editor.
+VS Code extension for checking and fixing Makefile whitespace conventions directly in the editor.
 
 ## 📚 About
 
@@ -36,9 +36,9 @@ The extension aims to provide a consistent development experience by combining:
 * whitespace lint rules;
 * configurable validation settings;
 * unit-tested diagnostic rules;
-* formatter support;
-* future quick fixes;
-* future Make target execution from a VS Code interface.
+* quick fixes for common whitespace issues;
+* a planned formatter;
+* planned Make target execution from a VS Code interface.
 
 The project was created to enforce simple and practical Makefile conventions while keeping the rules configurable, testable and easy to evolve.
 
@@ -51,6 +51,7 @@ Current features for the initial version:
 * Detect missing final newline at the end of the file.
 * Detect blank lines between a Makefile target and its first recipe command.
 * Register diagnostics in the VS Code **Problems** panel.
+* Provide quick fixes to remove trailing whitespace, reduce extra blank lines, add the final newline and remove blank lines before recipe commands.
 * Use TypeScript for safer extension development.
 * Use pure analyzer functions for fast unit testing.
 * Provide a modular structure for future rules, formatters and commands.
@@ -60,7 +61,6 @@ Future features planned for upcoming versions:
 * Validate Makefile section headers.
 * Validate helper sections using `##@`.
 * Validate target descriptions using `##`.
-* Provide quick fixes for common convention issues.
 * Format Makefiles using project conventions.
 * Display Makefile targets in a VS Code tree view.
 * Run Makefile targets from a play button in the editor interface.
@@ -276,7 +276,8 @@ Initial version focused on:
 * Makefile diagnostics registration;
 * simplified whitespace lint rules;
 * pure whitespace analyzer;
-* unit tests for whitespace diagnostics.
+* unit tests for whitespace diagnostics;
+* quick fixes for common whitespace issues.
 
 ### Future versions
 
@@ -285,7 +286,6 @@ Planned improvements:
 * Makefile formatter;
 * helper validation;
 * section validation;
-* quick fixes;
 * Make command tree view;
 * interface-based command execution;
 * VS Code integration tests;
