@@ -3,7 +3,7 @@ export function isMakeCommentLine(line: string): boolean {
 }
 
 export function isPhonyTargetLine(line: string): boolean {
-  return line.trim().startsWith(".PHONY");
+  return /^\.PHONY\s*:(?![:=])/.test(line.trim());
 }
 
 export function isMakeVariableAssignmentLine(line: string): boolean {
