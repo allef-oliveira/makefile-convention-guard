@@ -57,11 +57,11 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "check": "tsc --noEmit -p ./",
-    "test": "npm run compile && npm run test:unit",
-    "test:unit": "mocha dist/tests/unit/**/*.test.js",
+    "test": "npm run test:unit",
+    "test:unit": "npm run compile && mocha dist/tests/unit/**/*.test.js",
     "test:extension": "npm run compile && vscode-test",
     "test:extension:ci": "vscode-test",
-    "test:all": "npm run compile && npm run test:unit && npm run test:extension:ci",
+    "test:all": "npm run test:unit && npm run test:extension:ci",
     "vscode:prepublish": "npm run compile"
   },
   "repository": {
@@ -81,6 +81,7 @@
     "@types/vscode": "^1.125.0",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.0.0",
+    "mocha": "^11.7.6",
     "typescript": "^6.0.3"
   }
 }
