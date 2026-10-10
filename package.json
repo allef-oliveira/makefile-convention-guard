@@ -12,6 +12,43 @@
     "Formatters",
     "Other"
   ],
+  "contributes": {
+    "configuration": {
+      "title": "Makefile Convention Guard",
+      "properties": {
+        "makefileConventionGuard.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Enable or disable all Makefile Convention Guard diagnostics."
+        },
+        "makefileConventionGuard.diagnostics.warnTrailingWhitespace": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Report trailing spaces or tabs at the end of Makefile lines."
+        },
+        "makefileConventionGuard.diagnostics.warnMultipleBlankLines": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Report two or more consecutive blank lines in Makefiles."
+        },
+        "makefileConventionGuard.diagnostics.requireFinalNewline": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Report Makefiles that do not end with a newline."
+        },
+        "makefileConventionGuard.diagnostics.warnBlankLineBeforeRecipeCommand": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Report blank lines between a Makefile target and its first recipe command."
+        }
+      }
+    }
+  },
   "activationEvents": [
     "onLanguage:makefile"
   ],
