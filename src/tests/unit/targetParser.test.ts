@@ -22,6 +22,25 @@ describe("Makefile target parser", () => {
     assert.strictEqual(targets[0]?.name, "build-$(MODE)");
   });
 
+  it("uses inline ## comments as target descriptions", () => {
+    const targets = parseMakefileTargets(
+      "build test: ## Build and test the project\n",
+    );
+
+    assert.deepStrictEqual(targets.map(({ name, description }) => ({ name, description })), [
+      { name: "build", description: "Build and test the project" },
+      { name: "test", description: "Build and test the project" },
+    ]);
+  });
+
+  it("does not use ordinary or recipe comments as target descriptions", () => {
+    const targets = parseMakefileTargets(
+      "# General comment\nbuild: # ordinary comment\n\t@echo test ## recipe comment\n",
+    );
+
+    assert.deepStrictEqual(targets, [{ name: "build", phony: false, pattern: false }]);
+  });
+
   it("marks phony targets and hides patterns and internal names by default", () => {
     const targets = parseMakefileTargets(
       ".PHONY: all _private\nall: %.o\n_private:\n%.o: %.c\n",

@@ -1,17 +1,10 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import type { DiscoveredMakefile } from "../makefile/discovery";
-
-const MISE_CONFIG_PATHS = [
-  "mise.toml",
-  "mise.local.toml",
-  ".mise.toml",
-  ".mise.local.toml",
-  "mise/config.toml",
-  ".mise/config.toml",
-  ".config/mise.toml",
-  ".config/mise/config.toml",
-];
+import {
+  createMakeTargetInvocation,
+  findMiseConfig,
+} from "./makeTargetExecution";
 
 export async function runMakeTarget(
   makefile: DiscoveredMakefile,
@@ -27,11 +20,12 @@ export async function runMakeTarget(
   const cwd = cwdMode === "workspaceRoot"
     ? folder.uri.fsPath
     : path.dirname(makefile.uri.fsPath);
-  const makeArgs = ["-f", makefile.uri.fsPath, "--", target];
-  const usesMise = await hasMiseConfig(cwd);
-  const execution = usesMise
-    ? new vscode.ShellExecution("mise", ["exec", "--", "make", ...makeArgs], { cwd })
-    : new vscode.ShellExecution("make", makeArgs, { cwd });
+  const usesMise = await findMiseConfig(cwd, async (filePath) => {
+    const stat = await vscode.workspace.fs.stat(vscode.Uri.file(filePath));
+    return (stat.type & vscode.FileType.File) !== 0;
+  });
+  const invocation = createMakeTargetInvocation(makefile.uri.fsPath, target, usesMise);
+  const execution = new vscode.ShellExecution(invocation.command, invocation.args, { cwd });
   const task = new vscode.Task(
     {
       type: "makefileConventionGuard",
@@ -50,28 +44,4 @@ export async function runMakeTarget(
     clear: false,
   };
   await vscode.tasks.executeTask(task);
-}
-
-async function hasMiseConfig(startDirectory: string): Promise<boolean> {
-  let directory = startDirectory;
-
-  while (true) {
-    for (const configPath of MISE_CONFIG_PATHS) {
-      try {
-        const uri = vscode.Uri.file(path.join(directory, configPath));
-        const stat = await vscode.workspace.fs.stat(uri);
-        if ((stat.type & vscode.FileType.File) !== 0) {
-          return true;
-        }
-      } catch {
-        // Continue searching parent directories for a mise config.
-      }
-    }
-
-    const parent = path.dirname(directory);
-    if (parent === directory) {
-      return false;
-    }
-    directory = parent;
-  }
 }
