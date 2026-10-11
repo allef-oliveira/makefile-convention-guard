@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  VS Code extension for validating and fixing <strong>Makefile</strong> whitespace conventions.<br/>
-  Built with TypeScript and focused on Makefile diagnostics and quick fixes.
+  VS Code extension for checking, browsing and running <strong>Makefile</strong> targets.<br/>
+  Includes configurable diagnostics, quick fixes, favorites and command execution.
 </p>
 
 ---
@@ -24,27 +24,27 @@
 
 # Makefile Convention Guard
 
-VS Code extension for checking and fixing Makefile whitespace conventions directly in the editor.
+VS Code extension for Makefile diagnostics and target workflows directly in the editor.
 
 ## 📚 About
 
 **Makefile Convention Guard** is a Visual Studio Code extension focused on improving the maintainability of Makefiles used in project workflows.
 
-The extension aims to provide a consistent development experience by combining:
+The extension combines Makefile validation with a tree view for browsing and running targets:
 
-* Makefile diagnostics;
-* whitespace lint rules;
-* configurable validation settings;
-* unit-tested diagnostic rules;
-* quick fixes for common whitespace issues;
-* a planned formatter;
-* planned Make target execution from a VS Code interface.
+* configurable whitespace diagnostics and quick fixes;
+* Makefile and target trees in the Activity Bar;
+* manually adding Makefiles from the current workspace;
+* pinning targets to a separate favorites view;
+* running targets as VS Code tasks;
+* using the Node version configured by mise when a mise project config is present;
+* target tooltips from inline `##` descriptions.
 
 The project was created to enforce simple and practical Makefile conventions while keeping the rules configurable, testable and easy to evolve.
 
 ## ✨ Features
 
-Current features for the initial version:
+Current features:
 
 * Validate trailing whitespace in Makefiles.
 * Detect multiple consecutive blank lines.
@@ -52,24 +52,42 @@ Current features for the initial version:
 * Detect blank lines between a Makefile target and its first recipe command.
 * Register diagnostics in the VS Code **Problems** panel.
 * Provide quick fixes to remove trailing whitespace, reduce extra blank lines, add the final newline and remove blank lines before recipe commands.
-* Use TypeScript for safer extension development.
-* Use pure analyzer functions for fast unit testing.
-* Provide a modular structure for future rules, formatters and commands.
+* Add Makefiles manually to the **Makefiles** view. Automatic discovery is temporarily disabled.
+* Browse targets under each Makefile and pin frequently used targets to **Favoritos**.
+* Show the Makefile relative path beside favorite targets.
+* Use the inline pin and play actions to favorite or run a target.
+* Open a Makefile's `...` menu to reload its targets or remove it from the view. Removing it does not delete the file or its saved favorites.
+* Show a target's description as a tooltip when its rule uses an inline `##` comment.
+* Run targets through VS Code tasks. If a mise configuration is found in the Makefile directory or a parent directory, the extension runs `make` through `mise exec`.
 
-Future features planned for upcoming versions:
+Future improvements:
 
 * Validate Makefile section headers.
 * Validate helper sections using `##@`.
-* Validate target descriptions using `##`.
 * Format Makefiles using project conventions.
-* Display Makefile targets in a VS Code tree view.
-* Run Makefile targets from a play button in the editor interface.
+
+## 🧭 Browsing and Running Targets
+
+Open the **Makefiles** icon in the Activity Bar and choose **Add Makefiles** to select one or more Makefiles inside the workspace. Automatic discovery is currently disabled, so Makefiles must be added manually.
+
+Expand a Makefile to see its targets. Use the pin action to add a target to **Favoritos**, then run it with the play action. The **...** menu on a Makefile provides **Recarregar comandos do Makefile** and **Remover Makefile da lista**. Removing a Makefile from the view does not delete it from disk; its favorites remain saved.
+
+Add an inline `##` comment to the target rule to show a description in its tooltip:
+
+```makefile
+.PHONY: build
+build: ## Compile the application
+	npm run build
+```
+
+Targets run as VS Code tasks. By default, the working directory is the directory containing the Makefile. Set `makefileConventionGuard.execution.cwd` to `workspaceRoot` to run from the workspace root instead. When a mise config such as `.mise.toml` or `mise.toml` is found in the working directory or its parents, the task uses `mise exec -- make ...` so project tools such as Node are available at the configured versions.
 
 ## 📂 Repository Structure
 
 ```text
 makefile-convention-guard/
 ├── assets/
+│   ├── makefile.svg
 │   └── thumb.png
 ├── src/
 │   ├── config/
@@ -83,9 +101,22 @@ makefile-convention-guard/
 │   │       ├── whitespaceAnalyzer.ts
 │   │       └── whitespaceRules.ts
 │   ├── makefile/
-│   │   └── parser.ts
+│   │   ├── discovery.ts
+│   │   ├── parser.ts
+│   │   └── selection.ts
+│   ├── targets/
+│   │   ├── MakefileTreeProvider.ts
+│   │   ├── TargetFavorites.ts
+│   │   ├── makeTargetExecution.ts
+│   │   ├── registerTargetView.ts
+│   │   └── runMakeTarget.ts
 │   ├── tests/
+│   │   ├── suite/
+│   │   │   └── targetTree.test.ts
 │   │   └── unit/
+│   │       ├── makeTargetExecution.test.ts
+│   │       ├── targetFavorites.test.ts
+│   │       ├── targetParser.test.ts
 │   │       └── whitespaceAnalyzer.test.ts
 │   ├── types/
 │   │   └── diagnostics.ts
@@ -97,7 +128,7 @@ makefile-convention-guard/
 ├── package.json
 ├── package-lock.json
 ├── tsconfig.json
-├── README.md
+├── README.mdx
 └── .gitignore
 ```
 
@@ -118,7 +149,7 @@ makefile-convention-guard/
 * Improve consistency across Makefile-based project workflows.
 * Keep the extension modular, testable and easy to extend.
 * Use TypeScript to improve type safety and maintainability.
-* Prepare the project for future formatter, quick fix and Make command execution features.
+* Support common Makefile command workflows from a VS Code interface.
 * Prepare the project for CI using fast unit tests.
 
 ## ⚙️ Development Setup
@@ -149,7 +180,7 @@ npm run watch
 
 ## 🧪 Running Tests
 
-The project currently uses **Mocha** for fast unit tests.
+The project uses **Mocha** for unit tests and VS Code Extension Host tests.
 
 The whitespace validation logic is split into a pure analyzer module so it can be tested without starting the VS Code Extension Host.
 
@@ -165,6 +196,12 @@ Run the default test command:
 npm test
 ```
 
+Run the VS Code Extension Host tests:
+
+```bash
+npm run test:extension
+```
+
 Recommended validation before committing:
 
 ```bash
@@ -173,14 +210,18 @@ npm run compile
 npm run test:unit
 ```
 
-Current unit test coverage includes:
+Current test coverage includes:
 
 * trailing whitespace;
 * multiple consecutive blank lines;
 * missing final newline;
 * blank line before recipe command;
 * disabled diagnostics;
-* disabled individual whitespace rules.
+* disabled individual whitespace rules;
+* target parsing and inline descriptions;
+* favorite persistence and duplicate target names across Makefiles;
+* mise detection and Make command construction;
+* target tooltips in the VS Code Extension Host suite.
 
 ## 🧪 Running the Extension Locally
 
@@ -192,23 +233,17 @@ F5
 
 This opens a new **Extension Development Host** window.
 
-Then open a file recognized as `makefile`, such as:
+The extension activates on startup or when one of its views opens. Open the **Makefiles** view and add a Makefile manually to browse its targets.
+
+To test diagnostics, open a file recognized as `makefile`, such as:
 
 ```text
 Makefile
 ```
 
-The extension activates through the following activation event:
-
-```json
-"activationEvents": [
-  "onLanguage:makefile"
-]
-```
-
 ## 🔍 Diagnostics
 
-The initial diagnostic rules focus on whitespace conventions.
+The current diagnostic rules focus on whitespace conventions.
 
 ### Trailing whitespace
 
@@ -284,12 +319,9 @@ Initial version focused on:
 Planned improvements:
 
 * Makefile formatter;
-* helper validation;
-* section validation;
-* Make command tree view;
-* interface-based command execution;
-* VS Code integration tests;
-* CI pipeline.
+* automatic Makefile discovery;
+* richer Makefile section and helper validation;
+* broader Extension Host coverage.
 
 ## 👨‍💻 Author
 
