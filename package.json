@@ -44,12 +44,167 @@
           "default": true,
           "scope": "resource",
           "description": "Report blank lines between a Makefile target and its first recipe command."
+        },
+        "makefileConventionGuard.execution.cwd": {
+          "type": "string",
+          "enum": ["makefileDirectory", "workspaceRoot"],
+          "enumDescriptions": [
+            "Run make from the directory containing the selected Makefile.",
+            "Run make from the workspace root."
+          ],
+          "default": "makefileDirectory",
+          "description": "Working directory used when executing a target."
+        },
+        "makefileConventionGuard.discovery.exclude": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["**/node_modules/**", "**/.git/**", "**/vendor/**"],
+          "description": "Glob patterns excluded while discovering Makefiles."
+        },
+        "makefileConventionGuard.targets.showInternal": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show targets whose names start with '_' or '.'."
+        },
+        "makefileConventionGuard.targets.showPatternRules": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show pattern rules such as %.o in the target tree."
         }
       }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "makefileConventionGuard",
+          "title": "Makefiles",
+          "icon": "./assets/makefile.svg"
+        }
+      ]
+    },
+    "views": {
+      "makefileConventionGuard": [
+        {
+          "id": "makefileConventionGuard.favorites",
+          "name": "Favoritos",
+          "contextualTitle": "Targets favoritos"
+        },
+        {
+          "id": "makefileConventionGuard.targets",
+          "name": "Makefiles",
+          "contextualTitle": "Makefiles"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "makefileConventionGuard.refreshTargets",
+        "title": "Refresh Makefiles",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "makefileConventionGuard.addMakefiles",
+        "title": "Add Makefiles",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "makefileConventionGuard.reloadMakefile",
+        "title": "Recarregar comandos do Makefile",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "makefileConventionGuard.removeMakefile",
+        "title": "Remover Makefile da lista",
+        "icon": "$(remove)"
+      },
+      {
+        "command": "makefileConventionGuard.runTarget",
+        "title": "Run Make Target",
+        "icon": "$(play)"
+      },
+      {
+        "command": "makefileConventionGuard.addFavorite",
+        "title": "Fixar target",
+        "icon": "$(pin)"
+      },
+      {
+        "command": "makefileConventionGuard.removeFavorite",
+        "title": "Desafixar target",
+        "icon": "$(pinned)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "makefileConventionGuard.refreshTargets",
+          "when": "view == makefileConventionGuard.targets",
+          "group": "navigation"
+        },
+        {
+          "command": "makefileConventionGuard.addMakefiles",
+          "when": "view == makefileConventionGuard.targets",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "makefileConventionGuard.reloadMakefile",
+          "when": "view == makefileConventionGuard.targets && viewItem == makefile",
+          "group": "navigation@1"
+        },
+        {
+          "command": "makefileConventionGuard.removeMakefile",
+          "when": "view == makefileConventionGuard.targets && viewItem == makefile",
+          "group": "navigation@2"
+        },
+        {
+          "command": "makefileConventionGuard.addFavorite",
+          "when": "view == makefileConventionGuard.targets && viewItem == makefileTarget",
+          "group": "inline@1"
+        },
+        {
+          "command": "makefileConventionGuard.removeFavorite",
+          "when": "(view == makefileConventionGuard.targets || view == makefileConventionGuard.favorites) && viewItem == favoriteMakefileTarget",
+          "group": "inline@1"
+        },
+        {
+          "command": "makefileConventionGuard.runTarget",
+          "when": "(view == makefileConventionGuard.targets || view == makefileConventionGuard.favorites) && (viewItem == makefileTarget || viewItem == favoriteMakefileTarget)",
+          "group": "inline@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "makefileConventionGuard.reloadMakefile",
+          "when": "false"
+        },
+        {
+          "command": "makefileConventionGuard.removeMakefile",
+          "when": "false"
+        },
+        {
+          "command": "makefileConventionGuard.addFavorite",
+          "when": "false"
+        },
+        {
+          "command": "makefileConventionGuard.removeFavorite",
+          "when": "false"
+        }
+      ]
     }
   },
   "activationEvents": [
-    "onLanguage:makefile"
+    "onStartupFinished",
+    "onLanguage:makefile",
+    "onView:makefileConventionGuard.favorites",
+    "onView:makefileConventionGuard.targets",
+    "onCommand:makefileConventionGuard.refreshTargets",
+    "onCommand:makefileConventionGuard.addMakefiles",
+    "onCommand:makefileConventionGuard.reloadMakefile",
+    "onCommand:makefileConventionGuard.removeMakefile",
+    "onCommand:makefileConventionGuard.runTarget",
+    "onCommand:makefileConventionGuard.addFavorite",
+    "onCommand:makefileConventionGuard.removeFavorite"
   ],
   "main": "./dist/extension.js",
   "scripts": {
